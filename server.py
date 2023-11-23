@@ -1,19 +1,26 @@
-import os
-import http.server
-import socketserver
+from fastapi import FastAPI, Request
+from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
+from uploadFile import uploade_router
+from fastapi.templating import Jinja2Templates
 
-from http import HTTPStatus
+app = FastAPI()
+app.mount("/static", StaticFiles(directory="static"))
 
+# 템플릿 객체 초기화
+templates = Jinja2Templates(directory="templates")
 
-class Handler(http.server.SimpleHTTPRequestHandler):
-    def do_GET(self):
-        self.send_response(HTTPStatus.OK)
-        self.end_headers()
-        msg = 'Python is running on Qoddi! You requested %s' % (self.path)
-        self.wfile.write(msg.encode())
+@app.get("/")
+async def root():
+    return FileResponse("static/html/index.html", media_type="text/html")
 
+@app.get("/hello")
+async def hello():
+    return {"message": "Hello World"}
 
-port = int(os.getenv('PORT', 8080))
-print('Listening on port %s' % (port))
-httpd = socketserver.TCPServer(('', port), Handler)
-httpd.serve_forever()
+@app.get("/jinja2")
+async def jinja2(request: Request):
+    data = {"title": "FastAPI with Jinja2", "message": "Jinja2 Message"}
+    return templates.TemplateResponse("index.html", {"request": request, **data})
+
+app.include_router(uploade_router)
